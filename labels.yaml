@@ -1,0 +1,59 @@
+inference:
+  camera_index: 0
+  confidence_threshold: 0.7
+  cooldown_frames: 20
+  debounce_frames: 3
+  frame_height: 480
+  frame_width: 640
+  target_fps: 30
+sequence:
+  coords_per_landmark: 3
+  include_velocity: false
+  max_missing_hand_ratio: 0.3
+  num_hands: 2
+  num_landmarks_per_hand: 21
+  raw_feature_dim: 126
+  sequence_length: 30
+training:
+  batch_size: 16
+  dropout: 0.2
+  epochs: 50
+  hidden_dim: 64
+  learning_rate: 0.001
+  model_type: gru
+  num_layers: 2
+  seed: 42
+vocabulary:
+- idle
+- A
+- B
+- C
+- D
+- E
+- F
+- G
+- Good
+- H
+- Hello
+- I
+- J
+- K
+- L
+- M
+- N
+- Nice
+- O
+- OK
+- P
+- Peace
+- Q
+- R
+- S
+- T
+- U
+- V
+- W
+- Win-Win
+- X
+- Y
+- Z
