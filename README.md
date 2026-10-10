@@ -1,4 +1,4 @@
-# 🤟 Sign Language to Text & Voice (Real Time)
+# Sign Language to Text & Voice (Real Time)
 
 > A webcam-only app that turns sign language gestures into **written text and spoken audio**, live, to help close the communication gap between people who sign and people who don't.
 
@@ -7,7 +7,7 @@
 
 ---
 
-## ✨ Highlights
+##  Highlights
 
 - **Real time:** runs on a normal CPU and webcam, no GPU needed
 - **Privacy-friendly:** in web mode, video never leaves the browser; only hand landmarks (~1 KB/frame) are sent
@@ -18,7 +18,7 @@
 
 ---
 
-## 🧠 How It Works
+##  How It Works
 
 ```mermaid
 flowchart LR
@@ -42,7 +42,7 @@ flowchart LR
 
 ---
 
-## 🏗️ Architecture (Web Mode)
+##  Architecture (Web Mode)
 
 ```mermaid
 sequenceDiagram
@@ -72,7 +72,7 @@ flowchart TD
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 **Requirements:** Python 3.10 or 3.11, a webcam. Web mode needs Chrome or Edge and internet on first load (MediaPipe files load from a CDN).
 
@@ -124,7 +124,7 @@ uvicorn server:app --port 8000
 
 ---
 
-## ➕ Adding a New Sign
+##  Adding a New Sign
 
 ```bash
 python sign2text.py collect new_sign
@@ -136,7 +136,7 @@ If it gets confused with another sign, record more varied samples of both or pic
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 | File | Purpose |
 |---|---|
@@ -148,7 +148,7 @@ If it gets confused with another sign, record more varied samples of both or pic
 
 ---
 
-## ⚙️ Configuration
+##  Configuration
 
 Set at the top of `sign2text.py`:
 
@@ -161,7 +161,7 @@ Set at the top of `sign2text.py`:
 
 ---
 
-## 🛠️ Troubleshooting
+##  Troubleshooting
 
 <details>
 <summary><b>Wrong or no predictions</b></summary>
@@ -219,7 +219,7 @@ Cameras need HTTPS outside localhost. Use a tunnel (ngrok or Cloudflare Tunnel) 
 
 ---
 
-## ⚠️ Known Limitations
+##  Known Limitations
 
 - Isolated words from a small vocabulary only, no continuous sentences
 - Hand landmarks only; real sign languages also use facial expression and body position
@@ -228,7 +228,7 @@ Cameras need HTTPS outside localhost. Use a tunnel (ngrok or Cloudflare Tunnel) 
 
 ---
 
-## 🗺️ Roadmap
+##  Roadmap
 
 - [ ] Add face and pose landmarks (MediaPipe Holistic)
 - [ ] Split train/validation by person or session for honest accuracy
@@ -238,7 +238,7 @@ Cameras need HTTPS outside localhost. Use a tunnel (ngrok or Cloudflare Tunnel) 
 
 ---
 
-## 👥 Team
+##  Team
 Atharv Tyagi - 2392608033
 Garv Agarwala - 2392608055
 Deepraj Sharma - 2392608024
@@ -246,6 +246,6 @@ Dhairya Khandelwal - 2392608064
 Chirag Maru - 2392608020
 Vishwas Tiwari - 2392608160
 
-## 🙏 Credits
+##  Credits
 
 Built with [MediaPipe](https://developers.google.com/mediapipe), [OpenCV](https://opencv.org/), [PyTorch](https://pytorch.org/), [FastAPI](https://fastapi.tiangolo.com/) and the Web Speech API.
