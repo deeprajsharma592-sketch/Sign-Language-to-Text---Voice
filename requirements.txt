@@ -1,6 +1,11 @@
-streamlit
-streamlit-webrtc
-opencv-python-headless
-mediapipe
-scikit-learn
-numpy
+# Pinned dependencies for Real-Time Sign Language CV
+numpy>=1.23.5,<2.0.0
+torch>=2.0.0,<2.3.0
+mediapipe>=0.10.0,<0.11.0
+opencv-python>=4.7.0.72
+pyttsx3>=2.90
+PyYAML>=6.0
+scikit-learn>=1.2.0
+matplotlib>=3.7.0
+pytest>=7.3.0
+tqdm>=4.65.0
