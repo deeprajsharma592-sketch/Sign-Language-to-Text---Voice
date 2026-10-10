@@ -1,74 +1,94 @@
-# Sign Language to Text and Voice (Real Time)
+# 🤟 Sign Language to Text & Voice (Real Time)
 
-A computer-vision app that reads sign language gestures from an ordinary webcam and turns them into written text and spoken audio as they happen. It is built to help close the communication gap between people who sign and people who do not.
+> A webcam-only app that turns sign language gestures into **written text and spoken audio**, live, to help close the communication gap between people who sign and people who don't.
 
-It recognizes a small vocabulary of isolated signs (5 to 10 words plus an `idle` class). It is an MVP, not a full sign language translator.
+**Status:** Hackathon MVP. Recognizes a small vocabulary of isolated signs (5-10 words + an `idle` class). It is not a full sign language translator.
 
-## How it works
 
-```
-Webcam -> MediaPipe Hands -> normalized landmarks -> 30-frame window
-       -> GRU classifier -> confidence + debounce -> text on screen + speech
-```
+---
 
-1. **Hand tracking.** MediaPipe extracts 21 landmarks per hand (x, y, z), up to 2 hands, giving 126 numbers per frame.
-2. **Normalization.** Landmarks are made wrist-relative and scaled by hand size, so the model does not care where your hand is in the frame or how far it is from the camera.
-3. **Movement, not single frames.** A sliding window of the last 30 frames (about 1 second) goes into a small GRU. Many signs differ only in motion.
-4. **Stable output.** A word is emitted only when the same label wins with high confidence several times in a row, then a cooldown stops repeats. `idle` never produces output.
-5. **Voice.** Text-to-speech runs off the video loop, so speech never stalls the camera.
+## ✨ Highlights
 
-## Two ways to run it
+- **Real time:** runs on a normal CPU and webcam, no GPU needed
+- **Privacy-friendly:** in web mode, video never leaves the browser; only hand landmarks (~1 KB/frame) are sent
+- **Reads motion, not just poses:** a 30-frame window (~1 second) feeds a small GRU
+- **Stable output:** confidence threshold + debounce + cooldown prevents flickering and repeated words
+- **Two modes:** desktop (OpenCV) or browser (FastAPI + WebSocket)
+- **Easy to extend:** add a new sign in two commands
 
-| Mode | Command | Camera and speech |
-|---|---|---|
-| **Desktop** (OpenCV window) | `python sign2text.py run` | Python webcam, pyttsx3 voice |
-| **Web** (browser frontend) | `uvicorn server:app --port 8000` | Browser webcam, browser voice |
+---
 
-In web mode, the browser runs MediaPipe (JavaScript) and sends only hand landmarks over a WebSocket. The Python server normalizes them, runs the model, and sends back predictions. Video never leaves the browser.
+## 🧠 How It Works
 
-```
-Browser: webcam -> MediaPipe JS -> raw landmarks
-                                      | WebSocket (about 1 KB per frame)
-Server:  normalize -> window -> GRU -> debounce -> word
-                                      | WebSocket
-Browser: shows prediction + sentence, speaks via Web Speech API
+```mermaid
+flowchart LR
+    A[📷 Webcam] --> B[MediaPipe Hands<br/>21 landmarks × 2 hands]
+    B --> C[Normalize<br/>wrist-relative + scaled]
+    C --> D[30-frame<br/>sliding window]
+    D --> E[GRU classifier]
+    E --> F{Confident<br/>& stable?}
+    F -- No --> D
+    F -- Yes --> G[📝 Text on screen]
+    F -- Yes --> H[🔊 Speech]
 ```
 
-## Project files
-
-| File | Purpose |
+| Stage | What it does |
 |---|---|
-| `sign2text.py` | Data collection, training and the desktop live demo (`collect`, `train`, `run`) |
-| `server.py` | FastAPI WebSocket server that serves the model to the browser |
-| `index.html` | Browser frontend (webcam, landmarks overlay, live text, voice) |
-| `data/<word>/*.npy` | Recorded landmark sequences, created by `collect` |
-| `sign_model.pt` | Trained model, created by `train` |
+| **Hand tracking** | MediaPipe extracts 21 landmarks (x, y, z) per hand, up to 2 hands → 126 numbers per frame |
+| **Normalization** | Landmarks become wrist-relative and scaled by hand size, so position and distance from the camera don't matter |
+| **Windowing** | The last 30 frames go into the model, because many signs differ only in motion |
+| **Debounce** | A word is emitted only if the same label wins with high confidence several times in a row, then a cooldown blocks repeats. `idle` never produces output |
+| **Voice** | Text-to-speech runs off the video loop so the camera never stalls |
 
-## Requirements
+---
 
-- Python 3.10 or 3.11
-- A webcam
-- Runs on CPU. No GPU needed.
-- For web mode: a modern browser (Chrome or Edge recommended) and an internet connection on first load, because MediaPipe's browser files load from a CDN.
+## 🏗️ Architecture (Web Mode)
 
-## Installation
+```mermaid
+sequenceDiagram
+    participant B as 🌐 Browser
+    participant S as 🐍 FastAPI Server
+    B->>B: Webcam + MediaPipe JS → raw landmarks
+    B->>S: Landmarks via WebSocket (~1 KB/frame)
+    S->>S: Normalize → window → GRU → debounce
+    S-->>B: Predicted word + confidence
+    B->>B: Show text + speak (Web Speech API)
+```
+
+---
+
+## 🔁 Workflow: From Zero to Live Demo
+
+```mermaid
+flowchart TD
+    A[1. Pick distinct signs<br/>+ an idle class] --> B[2. Record data<br/>python sign2text.py collect word]
+    B --> C[3. Train<br/>python sign2text.py train]
+    C --> D[sign_model.pt]
+    D --> E{Run mode}
+    E -->|Desktop| F[python sign2text.py run]
+    E -->|Web| G[uvicorn server:app --port 8000]
+    C -.->|Weak accuracy?| B
+```
+
+---
+
+## 🚀 Quick Start
+
+**Requirements:** Python 3.10 or 3.11, a webcam. Web mode needs Chrome or Edge and internet on first load (MediaPipe files load from a CDN).
+
+### 1. Install
 
 ```bash
 python -m venv .venv
-# Windows:  .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
 pip install mediapipe opencv-python numpy torch pyttsx3
-pip install fastapi "uvicorn[standard]"      # only needed for web mode
+pip install fastapi "uvicorn[standard]"   # web mode only
 ```
 
-## Quick start
-
-### 1. Pick your signs
-
-Choose 5 signs that look clearly different from each other, for example `hello`, `thank_you`, `yes`, `no`, `help`. Learn each sign from a video dictionary of one sign language (ASL or ISL), and do not mix languages. You also need an `idle` class (see below).
-
 ### 2. Record data
+
+Choose signs that look clearly different (e.g. `hello`, `thank_you`, `yes`, `no`, `help`) from **one** sign language (ASL or ISL, don't mix). Always record an `idle` class too.
 
 ```bash
 python sign2text.py collect hello
@@ -79,100 +99,153 @@ python sign2text.py collect help
 python sign2text.py collect idle
 ```
 
-Each command records 40 samples. A countdown appears, then it records 1 second of movement. Tips for good data:
+Each run records 40 samples (re-running appends more). For good accuracy:
 
-- Record 40 to 60 samples per sign. You can run the command again to add more, and it appends.
-- **Vary the conditions between batches:** lighting, distance from the camera, sitting versus standing, clothing, and which hand leads.
-- **Record `idle` properly:** hands resting, hands entering and leaving the frame, random fidgeting. Without it, the model will force every movement into one of your words.
-- If you can, get 2 or 3 other people to record samples. This is the biggest boost to real-world accuracy.
+- Aim for **40-60 samples per sign**
+- Vary lighting, distance, posture, clothing and leading hand
+- Record `idle` properly: resting hands, hands entering/leaving the frame, fidgeting
+- **Get 2-3 other people to record**, the biggest boost to real-world accuracy
 
 ### 3. Train
 
 ```bash
-python sign2text.py train
+python sign2text.py train      # trains on data/, prints validation accuracy, saves sign_model.pt
 ```
-
-This trains on everything in `data/`, prints validation accuracy, and saves `sign_model.pt`. Training takes minutes on CPU.
 
 ### 4. Run
 
-**Desktop:**
 ```bash
+# Desktop (press q to quit)
 python sign2text.py run
-```
-Press `q` to quit.
 
-**Web:**
-```bash
+# Web: then open http://localhost:8000 and allow camera access
 uvicorn server:app --port 8000
 ```
-Open `http://localhost:8000` and allow camera access. `server.py`, `index.html`, `sign2text.py` and `sign_model.pt` must be in the same folder.
 
-## Adding a new sign
+---
 
-1. `python sign2text.py collect new_sign`
-2. `python sign2text.py train`
-3. Restart the app (or the server).
+## ➕ Adding a New Sign
 
-If the new sign gets confused with an existing one, record more varied samples of both, or choose a more distinct sign.
+```bash
+python sign2text.py collect new_sign
+python sign2text.py train
+# restart the app / server
+```
 
-## Configuration
+If it gets confused with another sign, record more varied samples of both or pick a more distinct sign.
 
-The tunable values are at the top of `sign2text.py`:
+---
 
-| Setting | Default | What it does |
+## 📁 Project Structure
+
+| File | Purpose |
+|---|---|
+| `sign2text.py` | Data collection, training and desktop live demo (`collect`, `train`, `run`) |
+| `server.py` | FastAPI WebSocket server that serves the model to the browser |
+| `index.html` | Browser frontend (webcam, landmark overlay, live text, voice) |
+| `data/<word>/*.npy` | Recorded landmark sequences (created by `collect`) |
+| `sign_model.pt` | Trained model (created by `train`) |
+
+---
+
+## ⚙️ Configuration
+
+Set at the top of `sign2text.py`:
+
+| Setting | Default | Effect |
 |---|---|---|
-| `SEQ_LEN` | 30 | Frames per gesture window |
+| `SEQ_LEN` | 30 | Frames per gesture window (re-record and retrain if changed) |
 | `CONF_THRESH` | 0.85 | Minimum confidence to accept a prediction |
-| `STABLE_N` | 3 | Same label this many times in a row before it is emitted |
+| `STABLE_N` | 3 | Same label this many times in a row before emitting |
 | `COOLDOWN` | 1.5 | Seconds before the same word can be spoken again |
 
-If you change `SEQ_LEN`, re-record data and retrain. Old samples will not match the new window length.
+---
 
-## Troubleshooting
+## 🛠️ Troubleshooting
 
-**Nothing is recognized, or it keeps predicting the wrong word**
-Check that you have an `idle` class, enough varied samples, and that signs are distinct. Lower `CONF_THRESH` slightly if nothing ever fires, or raise it if you get false triggers.
+<details>
+<summary><b>Wrong or no predictions</b></summary>
 
-**Works for me, fails for someone else**
-Your training data is too uniform. Add samples from other people, lighting conditions and distances.
+Check you have an `idle` class, enough varied samples, and distinct signs. Lower `CONF_THRESH` slightly if nothing fires; raise it if you get false triggers.
+</details>
 
-**Browser predictions look swapped compared to the desktop demo**
-Set `SWAP_HANDS = True` in `server.py`. Training data and live input must use the same left/right convention. Recording data through the browser page keeps them consistent.
+<details>
+<summary><b>Works for me, fails for others</b></summary>
 
-**Camera does not start in the browser**
-Use `http://localhost:8000`, not an IP address. Browsers block camera access on non-localhost HTTP. Also check the site's camera permission.
+Your training data is too uniform. Add other people, lighting and distances.
+</details>
 
-**Web page shows "server: reconnecting"**
-Make sure `uvicorn` is running and that `sign_model.pt` exists. Run `python sign2text.py train` first.
+<details>
+<summary><b>Browser predictions look swapped vs desktop</b></summary>
 
-**GPU error in the browser**
-Open `index.html` and change `delegate: "GPU"` to `delegate: "CPU"`.
+Set `SWAP_HANDS = True` in `server.py`. Training and live input must use the same left/right convention.
+</details>
 
-**First page load is slow or fails offline**
-The browser downloads MediaPipe's wasm and hand model from a CDN on first load. Download them and serve them locally for an offline demo.
+<details>
+<summary><b>Camera won't start in browser</b></summary>
 
-**No voice in desktop mode**
+Use `http://localhost:8000`, not an IP address (browsers block cameras on non-localhost HTTP). Also check the site's camera permission.
+</details>
+
+<details>
+<summary><b>"server: reconnecting" on the web page</b></summary>
+
+Make sure `uvicorn` is running and `sign_model.pt` exists (run `python sign2text.py train` first).
+</details>
+
+<details>
+<summary><b>GPU error in browser</b></summary>
+
+In `index.html`, change `delegate: "GPU"` to `delegate: "CPU"`.
+</details>
+
+<details>
+<summary><b>Slow or failing first load offline</b></summary>
+
+MediaPipe's wasm and hand model load from a CDN on first load. Download and serve them locally for an offline demo.
+</details>
+
+<details>
+<summary><b>No voice on desktop</b></summary>
+
 `pyttsx3` needs a system speech engine. On Linux, install `espeak`.
+</details>
 
-**Using it from a phone or another computer**
-The camera needs HTTPS outside localhost. Use a tunnel such as ngrok or Cloudflare Tunnel, and change the WebSocket URL in `index.html` from `ws://` to `wss://`.
+<details>
+<summary><b>Using it from a phone or another computer</b></summary>
 
-## Known limitations
+Cameras need HTTPS outside localhost. Use a tunnel (ngrok or Cloudflare Tunnel) and change the WebSocket URL in `index.html` from `ws://` to `wss://`.
+</details>
 
-- Recognizes **isolated words only** from a small vocabulary. It does not do continuous sentences.
-- Uses **hand landmarks only.** Real sign languages also rely on facial expressions and body position.
-- Accuracy depends heavily on the variety of your training data. Validation accuracy from a single session is optimistic. Test with a person who was not in your training data.
-- Does not handle fingerspelling.
+---
 
-## Roadmap ideas
+## ⚠️ Known Limitations
 
-- Add face and pose landmarks (MediaPipe Holistic) by changing the feature extractor.
-- Split train and validation by person or session for honest accuracy numbers.
-- Train on a public dataset such as WLASL for a larger vocabulary.
-- Add a language layer that turns a word sequence into a grammatical sentence.
-- Measure and optimize per-stage latency (landmarks, model, network).
+- Isolated words from a small vocabulary only, no continuous sentences
+- Hand landmarks only; real sign languages also use facial expression and body position
+- Accuracy depends heavily on data variety. Single-session validation accuracy is optimistic, so test with someone not in your training data
+- No fingerspelling support
 
-## Credits
+---
 
-Built with [MediaPipe](https://developers.google.com/mediapipe), [OpenCV](https://opencv.org), [PyTorch](https://pytorch.org), [FastAPI](https://fastapi.tiangolo.com) and the Web Speech API.
+## 🗺️ Roadmap
+
+- [ ] Add face and pose landmarks (MediaPipe Holistic)
+- [ ] Split train/validation by person or session for honest accuracy
+- [ ] Train on a public dataset (e.g. WLASL, or an ISL dataset) for a larger vocabulary
+- [ ] Add a language layer that turns word sequences into grammatical sentences
+- [ ] Measure and optimize per-stage latency
+
+---
+
+## 👥 Team
+Atharv Tyagi - 2392608033
+Garv Agarwala - 2392608055
+Deepraj Sharma - 2392608024
+Dhairya Khandelwal - 2392608064
+Chirag Maru - 2392608020
+Vishwas Tiwari - 2392608160
+
+## 🙏 Credits
+
+Built with [MediaPipe](https://developers.google.com/mediapipe), [OpenCV](https://opencv.org/), [PyTorch](https://pytorch.org/), [FastAPI](https://fastapi.tiangolo.com/) and the Web Speech API.
